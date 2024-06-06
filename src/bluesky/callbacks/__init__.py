@@ -14,6 +14,7 @@ __all__ = [
     "LiveFitPlot",
     "LiveRaster",
     "LiveMesh",
+    "SigmoidFit"
 ]
 
 from .core import (
@@ -25,5 +26,5 @@ from .core import (
     get_obj_fields,
     print_metadata,
 )
-from .fitting import LiveFit
+from .fitting import LiveFit, SigmoidFit
 from .mpl_plotting import LiveFitPlot, LiveGrid, LiveMesh, LivePlot, LiveRaster, LiveScatter

@@ -1,9 +1,11 @@
 import copy
 import pprint
 import warnings
-from collections import namedtuple
+from collections import namedtuple, deque
 
 import numpy as np
+from matplotlib import pyplot as plt
+from scipy.optimize import curve_fit
 
 from .core import CallbackBase, CollectThenCompute
 
@@ -178,7 +180,7 @@ def center_of_mass(input, labels=None, index=None):
 
 class PeakStats(CollectThenCompute):
     """
-    Compute peak statsitics after a run finishes.
+    Compute peak statistics after a run finishes.
 
     Results are stored in the attributes.
 
@@ -356,3 +358,53 @@ class PeakStats(CollectThenCompute):
 
         # reset y data
         y = self.y_data
+
+
+class SigmoidFit(CallbackBase):
+    def __init__(self, motor_field, detector_field, ps: PeakStats = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.motor_positions = deque()
+        self.detector_readings = deque()
+        self.motor_field = motor_field
+        self.detector_field = detector_field
+        self.ps = ps
+
+    def start(self, doc):
+        print(f"{doc} doc:\n{pprint.pformat(doc)}")
+
+    def event(self, doc):
+        self.motor_positions.append(doc["data"][self.motor_field])
+        self.detector_readings.append(doc["data"][self.detector_field])
+
+        xs = np.array(self.motor_positions)
+        ys = np.array(self.detector_readings)
+        print(f"  {xs = }\n  {ys = }")
+
+        def sigmoid(x, a, b, c, d):
+            return a / (1 + np.exp((x - c) * (b))) + d
+
+        def fit_and_plot(xs, ys):
+            p0 = [ys.ptp(), 1 / xs.ptp(), 0, ys.mean()]
+
+            res, covariance = curve_fit(sigmoid, xs, ys, p0=p0)
+
+            ys_fit = sigmoid(xs, *res)
+
+            ax = plt.gcf().gca()
+            ax.clear()
+            ax.plot(xs, ys, label="original data")
+            ax.plot(xs, ys_fit, label="fit data")
+            # ax.legend(ax.get_legend_handles_labels())
+            ax.grid(True)
+
+            return res
+        try:
+            fit_and_plot(xs, ys)
+        except Exception as e:
+            print(f"Fitting did not work. Check the error for details:\n{e}")
+
+    def stop(self, doc):
+        if self.ps is not None:
+            # TODO: update PeakStats with sigmoid info
+            pass
