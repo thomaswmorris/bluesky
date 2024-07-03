@@ -202,6 +202,7 @@ class LivePlot(QtAwareCallback):
             # This inner try/except block handles seq_num and time, which could
             # be keys in the data or accessing the standard entries in every
             # event.
+            print(doc)
             try:
                 new_x = doc["data"][self.x]
             except KeyError:
@@ -210,6 +211,9 @@ class LivePlot(QtAwareCallback):
                 else:
                     raise
             new_y = doc["data"][self.y]
+
+            print(f"{new_y =}")
+
         except KeyError:
             # wrong event stream, skip it
             return
@@ -228,6 +232,9 @@ class LivePlot(QtAwareCallback):
         self.x_data.append(x)
 
     def update_plot(self):
+
+        
+
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         self.ax.relim(visible_only=True)

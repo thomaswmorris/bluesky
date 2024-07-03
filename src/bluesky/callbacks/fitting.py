@@ -361,42 +361,42 @@ class PeakStats(CollectThenCompute):
 
 
 class SigmoidFit(CallbackBase):
-    def __init__(self, motor_field, detector_field, ps: PeakStats = None, *args, **kwargs):
+    def __init__(self, x, y, ax=None, peak_results = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.motor_positions = deque()
         self.detector_readings = deque()
-        self.motor_field = motor_field
-        self.detector_field = detector_field
-        self.ps = ps
+        self.x = x
+        self.y = y
+        self.ax = ax
+        self.peak_results = peak_results
 
     def start(self, doc):
         print(f"{doc} doc:\n{pprint.pformat(doc)}")
 
     def event(self, doc):
-        self.motor_positions.append(doc["data"][self.motor_field])
-        self.detector_readings.append(doc["data"][self.detector_field])
+        self.motor_positions.append(doc["data"][self.x])
+        self.detector_readings.append(doc["data"][self.y])
 
         xs = np.array(self.motor_positions)
         ys = np.array(self.detector_readings)
         print(f"  {xs = }\n  {ys = }")
 
         def sigmoid(x, a, b, c, d):
-            return a / (1 + np.exp((x - c) * (b))) + d
+            return a / (1 + np.exp((x - c) / b)) + d
 
         def fit_and_plot(xs, ys):
-            p0 = [ys.ptp(), 1 / xs.ptp(), 0, ys.mean()]
+            p0 = [np.std(ys), np.std(xs), 0, np.min(ys)]
 
             res, covariance = curve_fit(sigmoid, xs, ys, p0=p0)
 
             ys_fit = sigmoid(xs, *res)
 
-            ax = plt.gcf().gca()
-            ax.clear()
-            ax.plot(xs, ys, label="original data")
-            ax.plot(xs, ys_fit, label="fit data")
+            self.ax.clear()
+            self.ax.plot(xs, ys, label="original data")
+            self.ax.plot(xs, ys_fit, label="fit data")
             # ax.legend(ax.get_legend_handles_labels())
-            ax.grid(True)
+            self.ax.grid(True)
 
             return res
         try:
@@ -405,6 +405,6 @@ class SigmoidFit(CallbackBase):
             print(f"Fitting did not work. Check the error for details:\n{e}")
 
     def stop(self, doc):
-        if self.ps is not None:
+        if self.peak_results is not None:
             # TODO: update PeakStats with sigmoid info
             pass

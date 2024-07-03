@@ -24,7 +24,7 @@ from cycler import cycler
 from matplotlib.axis import Axis
 
 from .core import LiveTable, make_class_safe
-from .fitting import PeakStats
+from .fitting import PeakStats, LiveFit, SigmoidFit
 from .mpl_plotting import LiveGrid, LivePlot, LiveScatter, QtAwareCallback
 
 logger = logging.getLogger(__name__)
@@ -254,8 +254,14 @@ class BestEffortCallback(QtAwareCallback):
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
                     live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
+                    sigmoid_fit = SigmoidFit(x=x_key, y=y_key, ax=ax, peak_results=self.peaks)
+
                     live_plot("start", self._start_doc)
                     live_plot("descriptor", doc)
+
+                    sigmoid_fit("start", self._start_doc)
+                    sigmoid_fit("descriptor", doc)
+
                     peak_stats = PeakStats(
                         x=x_key, y=y_key, calc_derivative_and_stats=self._calc_derivative_and_stats
                     )
